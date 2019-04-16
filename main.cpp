@@ -189,7 +189,7 @@ public:
                 "include($$PWD/../../sstd_library/sstd_library.pri)", '\n',
                 "include($$PWD/../../sstd_qt_qml_quick_library/sstd_qt_qml_quick_library.pri)", '\n',
                 '\n',
-                "mkpath($${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/"sv, projectModuleName,")"sv,'\n',
+                "mkpath($${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/"sv, projectModuleName, ")"sv, '\n',
                 "CONFIG(debug,debug|release) {", '\n',
                 "    DESTDIR = $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/", projectModuleName, '\n',
                 "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$${SSTD_LIBRARY_OUTPUT_PATH}/sstd_copy_qml $${PWD}/theqml_the_debug $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug debug", '\n',
@@ -203,6 +203,8 @@ public:
                 "/plugins.qmltypes", "\n"sv,
                 '}', '\n',
                 "export(QMAKE_POST_LINK)", '\n',
+                '\n',
+                "DISTFILES += $$PWD/theqml_the_debug/"sv, projectModuleName, "/qmldir"sv, '\n',
                 '\n',
                 u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
         }
@@ -247,7 +249,7 @@ public:
                 u8R"(#include "Empty.hpp")"sv, '\n',
                 '\n',
                 "void sstd::TheMoudle::registerTypes(const char * argURI) {"sv, '\n',
-                u8R"(    qmlRegisterType<Empty>(argURI, 1, 0, "Empty");)",'\n',
+                u8R"(    qmlRegisterType<Empty>(argURI, 1, 0, "Empty");)", '\n',
                 "}"sv, '\n',
                 '\n',
                 u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
@@ -260,13 +262,13 @@ public:
                 "namespace sstd {", '\n',
                 '\n',
                 "    class Empty : public QObject {"sv, '\n',
-                "    private:"sv,'\n',
-                "        Q_OBJECT"sv,'\n',
-                "    public:",'\n',
-                "        Empty();",'\n',
-                "    }"sv,'\n',
+                "    private:"sv, '\n',
+                "        Q_OBJECT"sv, '\n',
+                "    public:", '\n',
+                "        Empty();", '\n',
+                "    }"sv, '\n',
                 '\n',
-                "}"sv, 
+                "}"sv,
                 '\n',
                 u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
         }
@@ -274,10 +276,10 @@ public:
             WriteStream varWrite{ outdir / projectModuleName / "Empty.cpp"sv };
             varWrite << print(getBom(), "/* "sv, projectModuleName, "/"sv, "Empty.cpp"sv, " */"sv, '\n',
                 '\n',
-                u8R"(#include "Empty.hpp")"sv,'\n',
+                u8R"(#include "Empty.hpp")"sv, '\n',
                 '\n',
-                "sstd::Empty::Empty() {"sv,'\n',
-                "}"sv,'\n',
+                "sstd::Empty::Empty() {"sv, '\n',
+                "}"sv, '\n',
                 '\n',
                 u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
         }
