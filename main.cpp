@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include <string_view>
+#include <sstream>
 
 #include <mutex>
 #include <condition_variable>
@@ -31,189 +32,248 @@ inline static std::string get_file_path(const fs::path & arg) {
 
 #include <list>
 #include <vector>
+#include <exception>
 
 #include <iostream>
 #include <fstream>
 
 #include <regex>
 
-inline static std::string_view trim_right(const std::string & arg) {
-    if (arg.empty()) {
-        return ""sv;
+class ReadStream : public std::ifstream {
+    using super = std::ifstream;
+public:
+    inline ReadStream(const fs::path & path) :
+        super(get_file_path(path), std::ios::binary) {
+        this->sync_with_stdio(false);
     }
-    const auto varLastPos =
-        arg.find_last_not_of(" \r\n"sv);
-    if (varLastPos == std::string::npos) {/*empty line ...*/
-        return ""sv;
+    ReadStream(const ReadStream &) = delete;
+    ReadStream(ReadStream &&) = delete;
+};
+
+class WriteStream : public std::ofstream {
+    using super = std::ofstream;
+public:
+    inline WriteStream(const fs::path & path) :
+        super(get_file_path(path), std::ios::binary) {
+        this->sync_with_stdio(false);
     }
-    return std::string_view{ arg.c_str(), 1 + varLastPos };
+    WriteStream(const WriteStream &) = delete;
+    WriteStream(WriteStream &&) = delete;
+};
+
+template<  typename ... Args >
+std::string print(Args && ... args) {
+    std::stringstream ss;
+    (ss << ... << std::forward<Args>(args));
+    return ss.str();
 }
 
-inline static void cast_a_file(const fs::path & arg, bool ignoreBom) {
-
-    std::list<std::string > varLines;
-
-    const auto & varFileName = get_file_path(arg);
-    {
-        std::ifstream varInput{ varFileName ,std::ios::binary };
-        if (!varInput.is_open()) {
-            return;
-        }
-        while (varInput.good()) {
-            auto & varLine = varLines.emplace_back();
-            std::getline(varInput, varLine);
-        }
-    }
-
-    if (varLines.empty()) {
-        return;
-    }
-
-    std::vector< std::string_view > varAllAboutToWrite;
-    varAllAboutToWrite.reserve(varLines.size());
-    for (const auto & varLine : varLines) {
-        varAllAboutToWrite.push_back(trim_right(varLine));
-    }
-
-    while (!varAllAboutToWrite.empty()) {
-        if (varAllAboutToWrite.back().empty()) {
-            varAllAboutToWrite.pop_back();
-        } else {
-            break;
-        }
-    }
-
-    const constexpr char varRawBom[4]{ (char)(0x000ef),
-                (char)(0x000bb),
-                (char)(0x000bf),
-                (char)(0x00000) };
-
-    std::ofstream varOutPut{ varFileName,std::ios::binary };
-    if (varAllAboutToWrite.empty()) {
-        if (ignoreBom) {
-            varOutPut << "\n"sv;
-        } else {
-            const std::string_view varBom{ varRawBom,3 };
-            varOutPut << varBom << "\n"sv;
-        }
-
-        return;
-    }
-
-    if (!ignoreBom) {
-        const auto & varFirstLine = varAllAboutToWrite[0];
-        bool varNeedWriteBom = false;
-        if (varFirstLine.size() < 3) {
-            varNeedWriteBom = true;
-        } else {
-            if ((varFirstLine[0] != varRawBom[0]) ||
-                (varFirstLine[1] != varRawBom[1]) ||
-                (varFirstLine[2] != varRawBom[2])) {
-                varNeedWriteBom = true;
-            }
-        }
-        if (varNeedWriteBom) {
-            const std::string_view varBom{ varRawBom,3 };
-            varOutPut << varBom;
-        }
-    }
-
-    for (const auto & varLine : varAllAboutToWrite) {
-        varOutPut << varLine << "\n"sv;
-    }
-
-}
-
-inline static void castCRLFOrCRToLF(const fs::path & arg) {
-    if (!fs::is_directory(arg)) {
-        return;
-    }
-    const static std::wregex varCheckFormat{
-        LR"!(^[^.].*\.(?:(?:txt)|(?:pri)|(?:pro)|(?:cpp)|(?:c)|(?:cc)|(?:h)|(?:hpp)|(?:hxx)|(?:qml)|(?:tex))$)!" ,
-        std::regex_constants::icase | std::regex_constants::ECMAScript
-    };
-    const static std::wregex varCheckIgnoreBOM{
-        LR"!(^[^.].*\.(?:(?:pri)|(?:pro)|(?:txt))$)!" ,
-        std::regex_constants::icase | std::regex_constants::ECMAScript
-    };
-    std::list< std::pair< fs::path, std::wstring > > varAboutToDo;
-    {
-        fs::recursive_directory_iterator varIt{ arg };
-        fs::recursive_directory_iterator const varEnd;
-        for (; varIt != varEnd; ++varIt) {
-            if (!fs::is_regular_file(*varIt)) {
-                continue;
-            }
-            const auto & varFileNamePath = varIt->path();
-            auto varFileName =
-                varFileNamePath.filename().wstring();
-            if (std::regex_match(varFileName, varCheckFormat)) {
-                varAboutToDo.emplace_back(varFileNamePath, std::move(varFileName));
-            }
-        }
-    }
-    for (const auto & varI : varAboutToDo) {
-        const auto varIgnoreBOM =
-            std::regex_match(varI.second, varCheckIgnoreBOM);
-        cast_a_file(varI.first, varIgnoreBOM);
-    }
+inline constexpr std::string_view getBom() {
+    return "\xEF\xBB\xBF"sv;
 }
 
 class Main {
 public:
-    fs::path rootPath;
-    std::vector< fs::path > paths;
-    std::atomic< unsigned int > threadCount{ 0 };
-    std::condition_variable wait;
-    std::mutex mutex;
-
-    inline Main(const fs::path & arg) : rootPath(arg) {
-        paths.push_back(rootPath / ".." / "chapter01");
-        paths.push_back(rootPath / ".." / "chapter02");
-        paths.push_back(rootPath / ".." / "latex_book");
-        paths.push_back(rootPath / ".." / "qt_quick_book_private");
-        paths.push_back(rootPath / ".." / "sstd_clean_code");
-        paths.push_back(rootPath / ".." / "sstd_copy_qml");
-        paths.push_back(rootPath / ".." / "sstd_library");
-        paths.push_back(rootPath / ".." / "sstd_qt_qml_quick_library");
+    fs::path outdir;
+    std::string projectName;
+    std::string projectModuleName;
+    inline void construct() {
+        projectModuleName = projectName + "_module"s;
     }
-
-    inline void call() {
-
-        std::unique_lock varLock{ mutex };
-
-        for (const auto & varI : paths) {
-
-            /*限制线程数量*/
-            while (threadCount.load() > (std::thread::hardware_concurrency() + 2)) {
-                wait.wait_for(varLock, 10ms);
-            }
-
-            ++threadCount;
-
-            std::thread([this, varI]() {
-                try {
-                    castCRLFOrCRToLF(varI);
-                } catch (...) {
-                }
-                --threadCount;
-                wait.notify_all();
-            }).detach();
+    inline void createProject() {
+        fs::create_directories(outdir / projectName);
+        {
+            WriteStream varWrite{ outdir / projectName / (projectName + ".pro"s) };
+            varWrite << print("# ", projectName, "/", projectName, ".pro", '\n',
+                '\n',
+                "TEMPLATE = app"sv, '\n',
+                '\n',
+                "CONFIG(debug,debug|release){"sv, '\n',
+                "    TARGET = "sv, projectName, "_debug"sv, '\n',
+                "}else{", '\n',
+                "    TARGET = "sv, projectName, '\n',
+                '}', '\n',
+                '\n',
+                "SOURCES += $$PWD/main.cpp"sv, '\n',
+                '\n',
+                "include($$PWD/../../sstd_library/sstd_library.pri)"sv, '\n',
+                "include($$PWD/../../sstd_qt_qml_quick_library/sstd_qt_qml_quick_library.pri)"sv, '\n',
+                "include($$PWD/../../sstd_library/add_vc_debug_console.pri)"sv, '\n',
+                '\n',
+                "DESTDIR = $${SSTD_LIBRARY_OUTPUT_PATH}"sv, '\n',
+                '\n',
+                "CONFIG(debug,debug|release){"sv, '\n',
+                "    DEFINES += CURRENT_DEBUG_PATH=\\\"$$PWD\\\""sv, '\n',
+                "}else{"sv, "\n"sv,
+                "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$${DESTDIR}/sstd_copy_qml $${PWD}/appqml $${DESTDIR}/appqml release"sv, "\n"sv,
+                "    export(QMAKE_POST_LINK)"sv, "\n"sv,
+                "}"sv, "\n"sv,
+                '\n',
+                "QMLSOURCES += $$PWD/appqml/"sv, projectName, "/main.qml"sv, '\n',
+                '\n',
+                "lupdate_only{"sv, "\n"sv,
+                "    SOURCES += $$QMLSOURCES", "\n"sv,
+                '}', '\n',
+                '\n',
+                "DISTFILES += $$QMLSOURCES"sv, '\n',
+                '\n',
+                u8R"(#/*endl_input_of_latex_for_clanguage_lick*/")", '\n');
+        }
+        {
+            WriteStream varWrite{ outdir / projectName / "main.cpp"sv };
+            varWrite << print(getBom(), "/* "sv, projectName, "/"sv, "main.cpp"sv, " */"sv, '\n',
+                '\n',
+                "int main(int argc, char ** argv) {"sv, '\n',
+                '\n',
+                "    sstd::QtApplication varApplication{ argc,argv };"sv, '\n',
+                '\n',
+                "    QQmlApplicationEngine varEngine;"sv, '\n',
+                "    {"sv, '\n',
+                u8R"(        /*获得Qml文件绝对路径*/)"sv, '\n',
+                "        auto varFullFileName = sstd::autoLocalPath<QUrl>("sv, '\n',
+                u8R"(            QStringLiteral("appqml/)"sv, projectName, u8R"(/main.qml"));)", '\n',
+                u8R"(        /*加载Qml文件*/)", '\n',
+                u8R"(        varEngine.load(varFullFileName);)"sv, '\n',
+                u8R"(        /*检查并报错*/)", '\n',
+                u8R"(        if (varEngine.rootObjects().empty()) {)"sv, '\n',
+                u8R"(            return -1;)"sv, '\n',
+                u8R"(        })", '\n',
+                u8R"(    })", '\n',
+                u8R"(    return varApplication.exec();)", '\n',
+                '\n',
+                u8R"(})", '\n',
+                '\n',
+                u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
+        }
+        fs::create_directories(outdir / projectName / "appqml"sv / projectName);
+        {
+            WriteStream varWrite{ outdir / projectName / "appqml"sv / projectName / "main.qml"sv };
+            varWrite << print(getBom(), "/* "sv, "appqml"sv, "/", projectName, "/"sv, "main.qml"sv, " */"sv, '\n',
+                "import QtQuick 2.9", '\n',
+                "import QtQuick.Controls 2.5", '\n',
+                '\n',
+                u8R"(/*begin:import*/)"sv, '\n',
+                "import theqml_the_debug."sv, projectModuleName, " 1.0"sv, '\n',
+                u8R"(/*end:import*/)", '\n',
+                '\n',
+                u8R"(ApplicationWindow {)"sv, '\n',
+                '\n',
+                "    width: 360 ;", '\n',
+                "    height: 64 ;", '\n',
+                "    visible: true ;", '\n',
+                '\n',
+                '}', '\n',
+                u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n',
+                u8R"(/*begin:debug*/)", '\n',
+                u8R"(/*end:debug*/)", '\n');
 
         }
-
-        /*等待所有线程完成*/
-        while (threadCount.load() > 0) {
-            wait.wait_for(varLock, 10ms);
+    }
+    inline void createProjectModule() {
+        fs::create_directories(outdir / projectModuleName);
+        fs::create_directories(outdir / projectModuleName / "theqml_the_debug"s / projectModuleName);
+        {
+            WriteStream varWrite{ outdir / projectModuleName / (projectModuleName + ".pro"s) };
+            varWrite << print("# "sv, projectModuleName, "/"sv, projectModuleName, ".pro"sv, '\n',
+                '\n',
+                "TEMPLATE = lib"sv, '\n',
+                "CONFIG += plugin", '\n',
+                "TARGET = $$qtLibraryTarget("sv, projectModuleName, ")"sv, "\n"sv,
+                '\n',
+                "SOURCES += $$PWD/the_moudle.cpp"sv, '\n',
+                "SOURCES += $$PWD/the_moudle.hpp"sv, '\n',
+                '\n',
+                "include($$PWD/../../sstd_library/sstd_library.pri)", '\n',
+                "include($$PWD/../../sstd_qt_qml_quick_library/sstd_qt_qml_quick_library.pri)", '\n',
+                '\n',
+                "CONFIG(debug,debug|release) {", '\n',
+                "    DESTDIR = $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/", projectModuleName, '\n',
+                "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$${SSTD_LIBRARY_OUTPUT_PATH}/sstd_copy_qml $${PWD}/theqml_the_debug $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug debug", '\n',
+                "}else{", '\n',
+                "    DESTDIR = $${SSTD_LIBRARY_OUTPUT_PATH}/theqml/", projectModuleName, '\n',
+                "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$${SSTD_LIBRARY_OUTPUT_PATH}/sstd_copy_qml $${PWD}/theqml_the_debug $${SSTD_LIBRARY_OUTPUT_PATH}/theqml release", '\n',
+                "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable theqml.",
+                projectModuleName,
+                " 1.0 $${SSTD_LIBRARY_OUTPUT_PATH} > $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/",
+                projectModuleName,
+                "/plugins.qmltypes", "\n"sv,
+                '}', '\n',
+                "export(QMAKE_POST_LINK)", '\n',
+                '\n',
+                u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
+        }
+        {
+            WriteStream varWrite{ outdir / projectModuleName / "theqml_the_debug"s / projectModuleName / "qmldir"s };
+            varWrite << print("module theqml_the_debug.", projectModuleName, '\n',
+                "plugin ", projectModuleName, '\n',
+                /*only for debug*/"typeinfo plugins.qmltypes"sv, '\n',
+                /*only for static library,
+                in the book ,
+                only use dynamic library,
+                so never need!*/"#classname sstd::TheMoudle"sv,'\n');
+        }
+        {
+            WriteStream varWrite{ outdir / projectModuleName / "the_moudle.hpp"sv };
+            varWrite << print(getBom(), "/* "sv, projectModuleName, "/"sv, "the_moudle.hpp"sv, " */"sv, '\n',
+                "#pragma once", '\n',
+                '\n',
+                "#include <sstd_qt_qml_quick_library.hpp>", '\n',
+                '\n',
+                "namespace sstd {", '\n',
+                '\n',
+                "    class TheMoudle : public QQmlExtensionPlugin {", '\n',
+                "        Q_OBJECT", '\n',
+                "    private:", '\n',
+                "        Q_PLUGIN_METADATA(IID QQmlExtensionInterface_iid)", '\n',
+                "    public:", '\n',
+                "        void registerTypes(const char *uri) override;", '\n',
+                "    private:", '\n',
+                "        sstd_class(TheMoudle);", '\n',
+                "    };", '\n',
+                '\n',
+                "}/*namespace sstd*/", '\n',
+                '\n',
+                u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
+        }
+        {
+            WriteStream varWrite{ outdir / projectModuleName / "the_moudle.cpp"sv };
+            varWrite << print(getBom(), "/* "sv, projectModuleName, "/"sv, "the_moudle.cpp"sv, " */"sv, '\n',
+                u8R"(#include "the_moudle.hpp")"sv, '\n',
+                '\n',
+                "void sstd::TheMoudle::registerTypes(const char *uri) {"sv, '\n',
+                '\n',
+                "}"sv, '\n',
+                '\n',
+                u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
         }
 
     }
-
 };
 
-int main(int, char **) {
+/*
+0:application path
+1:out dir
+2:project name
+*/
+int main(int argc, char ** argv) try {
 
-    auto var = new Main{ CURRENT_DEBUG_PATH };
-    var->call();
+    if (argc < 2) {
+        return -1;
+    }
 
+    auto varMain = new Main;
+    if (argc > 2) {
+        varMain->outdir = argv[1];
+        varMain->projectName = argv[2];
+    } else {
+        varMain->projectName = argv[1];
+        varMain->outdir = fs::path(argv[0]).parent_path();
+    }
+    varMain->construct();
+    varMain->createProject();
+    varMain->createProjectModule();
+
+} catch (const std::exception & arg) {
+    std::cout << arg.what() << std::endl;
 }
+
