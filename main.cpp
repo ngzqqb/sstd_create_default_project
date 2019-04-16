@@ -189,6 +189,7 @@ public:
                 "include($$PWD/../../sstd_library/sstd_library.pri)", '\n',
                 "include($$PWD/../../sstd_qt_qml_quick_library/sstd_qt_qml_quick_library.pri)", '\n',
                 '\n',
+                "mkpath($${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/"sv, projectModuleName,")"sv,'\n',
                 "CONFIG(debug,debug|release) {", '\n',
                 "    DESTDIR = $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/", projectModuleName, '\n',
                 "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$${SSTD_LIBRARY_OUTPUT_PATH}/sstd_copy_qml $${PWD}/theqml_the_debug $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug debug", '\n',
