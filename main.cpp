@@ -64,6 +64,7 @@ public:
 template<  typename ... Args >
 std::string print(Args && ... args) {
     std::string varAns;
+    varAns.reserve(1024 * 4);
     (varAns += ... += std::forward<Args>(args));
     return std::move(varAns);
 }
@@ -122,6 +123,8 @@ public:
         {
             WriteStream varWrite{ outdir / projectName / "main.cpp"sv };
             varWrite << print(getBom(), "/* "sv, projectName, "/"sv, "main.cpp"sv, " */"sv, '\n',
+                '\n',
+                "#include <sstd_qt_qml_quick_library.hpp>", '\n',
                 '\n',
                 "int main(int argc, char ** argv) {"sv, '\n',
                 '\n',
@@ -198,15 +201,15 @@ public:
                 "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$${SSTD_LIBRARY_OUTPUT_PATH}/sstd_copy_qml $${PWD}/theqml_the_debug $${SSTD_LIBRARY_OUTPUT_PATH}/theqml release", '\n',
                 "    QMAKE_POST_LINK += $$escape_expand(\\n\\t)$$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable theqml.",
                 projectModuleName,
-                " 1.0 $${SSTD_LIBRARY_OUTPUT_PATH} > $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/",
+                " 1.0 $${SSTD_LIBRARY_OUTPUT_PATH} > $${SSTD_LIBRARY_OUTPUT_PATH}/theqml_the_debug/"sv,
                 projectModuleName,
-                "/plugins.qmltypes", "\n"sv,
+                "/plugins.qmltypes"sv, "\n"sv,
                 '}', '\n',
                 "export(QMAKE_POST_LINK)", '\n',
                 '\n',
                 "DISTFILES += $$PWD/theqml_the_debug/"sv, projectModuleName, "/qmldir"sv, '\n',
                 '\n',
-                u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
+                u8R"(#/*endl_input_of_latex_for_clanguage_lick*/)", '\n');
         }
         {
             WriteStream varWrite{ outdir / projectModuleName / "theqml_the_debug"s / projectModuleName / "qmldir"s };
@@ -270,7 +273,7 @@ public:
                 "        Empty();", '\n',
                 "    private:", '\n',
                 "        sstd_class(Empty);", '\n',
-                "    }"sv, '\n',
+                "    };"sv, '\n',
                 '\n',
                 "}"sv,
                 '\n',
