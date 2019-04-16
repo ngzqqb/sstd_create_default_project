@@ -63,9 +63,9 @@ public:
 
 template<  typename ... Args >
 std::string print(Args && ... args) {
-    std::stringstream ss;
-    (ss << ... << std::forward<Args>(args));
-    return ss.str();
+    std::string varAns;
+    (varAns += ... += std::forward<Args>(args));
+    return std::move(varAns);
 }
 
 inline constexpr std::string_view getBom() {
