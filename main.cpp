@@ -117,6 +117,7 @@ public:
                 '}', '\n',
                 '\n',
                 "DISTFILES += $$QMLSOURCES"sv, '\n',
+                "QML_IMPORT_PATH += $${SSTD_LIBRARY_OUTPUT_PATH}",'\n',
                 '\n',
                 u8R"(#/*endl_input_of_latex_for_clanguage_lick*/")", '\n');
         }
