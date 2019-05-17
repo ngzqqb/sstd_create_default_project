@@ -148,7 +148,7 @@ public:
                 "        auto varFullFileName = sstd::autoLocalPath<QUrl>("sv, '\n',
                 u8R"(            QStringLiteral("appqml/)"sv, projectName, u8R"(/main.qml"));)", '\n',
                 u8R"(        /*加载Qml文件*/)", '\n',
-                u8R"(        sstd::checkedLoadQmlFile(&varEngine,&varApplication,varFullFileName);)"sv, '\n',
+                u8R"(        sstd::checkedLoadQmlFile(&varEngine, &varApplication, varFullFileName);)"sv, '\n',
                 u8R"(    })", '\n',
                 u8R"(    return varApplication.exec();)", '\n',
                 '\n',
