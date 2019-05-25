@@ -174,7 +174,6 @@ public:
                 "    height: 64 ;", '\n',
                 "    id : idRoot ; " , "\n",
                 "    Component.onCompleted: {" , "\n",
-                "        Qt.callLater(runOnceOnStart) ;", '\n',
                 "     }" , "\n",
                 '\n',
                 '}', '\n',
