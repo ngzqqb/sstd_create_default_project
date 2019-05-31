@@ -331,4 +331,3 @@ int main(int argc, char ** argv) try {
 } catch (const std::exception & arg) {
     std::cout << arg.what() << std::endl;
 }
-
