@@ -142,7 +142,7 @@ public:
                 '\n',
                 "    sstd::QtStyledApplication varApplication{ argc,argv };"sv, '\n',
                 '\n',
-                "    QQmlApplicationEngine varEngine;"sv, '\n',
+                "    auto & varEngine = *varApplication.getStyledApplicatoinEngine();"sv, '\n',
                 "    {"sv, '\n',
                 u8R"(        /*获得Qml文件绝对路径*/)"sv, '\n',
                 "        auto varFullFileName = sstd::autoLocalPath<QUrl>("sv, '\n',
