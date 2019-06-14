@@ -160,8 +160,8 @@ public:
         {
             WriteStream varWrite{ outdir / projectName / "appqml"sv / projectName / "main.qml"sv };
             varWrite << print(getBom(), "/* "sv, "appqml"sv, "/", projectName, "/"sv, "main.qml"sv, " */"sv, '\n',
-                "import QtQuick 2.9", '\n',
-                "import QtQuick.Controls 2.5", '\n',
+                "import QtQuick 2.13", '\n',
+                "import QtQuick.Controls 2.13", '\n',
                 "/*begin:import*/",'\n',
                 "import theqml_the_debug.sstd.styled.app 1.0", '\n',
                 "/*end:import*/",'\n',
