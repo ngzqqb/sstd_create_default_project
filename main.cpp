@@ -69,7 +69,7 @@ std::string print(Args && ... args) {
     return std::move(varAns);
 }
 
-inline std::string_view emptyPostLink(){
+inline std::string_view emptyPostLink() {
     return u8R"(
 isEmpty(QMAKE_POST_LINK){
     QMAKE_POST_LINK += $${SSTD_LIBRARY_OUTPUT_PATH}/sstd_copy_qml $${PWD} $${PWD} skip
@@ -128,7 +128,7 @@ public:
                 '}', '\n',
                 '\n',
                 "DISTFILES += $$QMLSOURCES"sv, '\n',
-                "QML_IMPORT_PATH += $${SSTD_LIBRARY_OUTPUT_PATH}",'\n',
+                "QML_IMPORT_PATH += $${SSTD_LIBRARY_OUTPUT_PATH}", '\n',
                 '\n',
                 u8R"(#/*endl_input_of_latex_for_clanguage_lick*/")", '\n');
         }
@@ -162,9 +162,9 @@ public:
             varWrite << print(getBom(), "/* "sv, "appqml"sv, "/", projectName, "/"sv, "main.qml"sv, " */"sv, '\n',
                 "import QtQuick 2.13", '\n',
                 "import QtQuick.Controls 2.13", '\n',
-                "/*begin:import*/",'\n',
+                "/*begin:import*/", '\n',
                 "import theqml_the_debug.sstd.styled.app 1.0", '\n',
-                "/*end:import*/",'\n',
+                "/*end:import*/", '\n',
                 '\n',
                 u8R"(/*begin:import*/)"sv, '\n',
                 "import theqml_the_debug."sv, projectModuleName, " 1.0"sv, '\n',
@@ -174,10 +174,10 @@ public:
                 '\n',
                 "    width: 360 ;", '\n',
                 "    height: 64 ;", '\n',
-                "    id : idRoot ; " , "\n",
+                "    id : idRoot ; ", "\n",
                 "\n",
-                "    Component.onCompleted: {" , "\n",
-                "    }" , "\n",
+                "    Component.onCompleted: {", "\n",
+                "    }", "\n",
                 '\n',
                 '}', '\n',
                 u8R"(/*endl_input_of_latex_for_clanguage_lick*/)", '\n',
